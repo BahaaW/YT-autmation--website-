@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ShortsFlow Studio — Automated YouTube Shorts Production</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  
+  <!-- APP HEADER -->
+  <header class="app-header">
+    <div class="logo">
+      <span class="logo-icon">🎬</span>
+      <h1>ShortsFlow Studio</h1>
+    </div>
+    <button class="btn-config" id="btn-open-config">
+      <span class="icon">⚙</span> Configuration
+    </button>
+  </header>
+
+  <!-- MAIN CONTAINER (Follows user hand-drawn sketch) -->
+  <main class="dashboard-grid">
+    
+    <!-- TOP SECTION: BIG START RUN BUTTON -->
+    <section class="run-section">
+      <div class="run-card">
+        <div class="run-info">
+          <h2>Start Automated Video Production</h2>
+          <p id="scheduler-status-text">Daily scheduler is active. Runs automatically at 10:00 AM.</p>
+        </div>
+        <button class="btn-giant-start" id="btn-trigger-autonomous-giant">
+          <span class="play-icon">▶</span> Start Autonomous Run
+        </button>
+      </div>
+    </section>
+
+    <!-- BOTTOM GRID: 2 COLUMNS -->
+    <div class="bottom-columns">
+      
+      <!-- COLUMN 1: PROGRESS ON VIDEOS -->
+      <section class="panel progress-panel">
+        <div class="panel-header">
+          <h2>Production Progress & Logs</h2>
+          <span class="badge badge-active" id="engine-status-badge">Idle</span>
+        </div>
+        
+        <!-- Live progress indicators -->
+        <div class="progress-bar-container" style="display: none;" id="active-progress-bar-group">
+          <div class="progress-step-labels">
+            <span class="step-lbl" id="step-lbl-crawl">1. Search</span>
+            <span class="step-lbl" id="step-lbl-eval">2. Score</span>
+            <span class="step-lbl" id="step-lbl-script">3. Script</span>
+            <span class="step-lbl" id="step-lbl-voice">4. Voice</span>
+            <span class="step-lbl" id="step-lbl-render">5. Compile</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="active-progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <div class="terminal-logs-wrapper">
+          <pre id="console-log-box" class="terminal-logs">Waiting for autonomous trigger...</pre>
+        </div>
+      </section>
+
+      <!-- COLUMN 2: LINKS OF VIDEOS -->
+      <section class="panel links-panel">
+        <div class="panel-header">
+          <h2>Generated Videos & Queue</h2>
+          <nav class="queue-tabs">
+            <button class="tab-btn active" data-filter="all">All</button>
+            <button class="tab-btn" data-filter="active">Queue</button>
+            <button class="tab-btn" data-filter="done">Completed</button>
+          </nav>
+        </div>
+        
+        <div class="queue-list-container">
+          <!-- Quick Manual URL Add -->
+          <form id="quick-add-form" class="quick-add-form">
+            <input type="url" id="quickSourceUrl" placeholder="Or paste video link here to import manually..." required>
+            <button type="submit" class="btn btn-secondary">Add</button>
+          </form>
+
+          <div id="queue-list" class="queue-list">
+            <!-- Populated via Javascript -->
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- CONFIG SLIDE-OUT DRAWER -->
+  <div class="config-drawer-overlay" id="config-drawer-overlay"></div>
+  <aside class="config-drawer" id="config-drawer">
+    <div class="drawer-header">
+      <h2>Settings</h2>
+      <button class="btn-close-drawer" id="btn-close-config">×</button>
+    </div>
+    <div class="drawer-body">
+      <!-- Unified Global Search Prompt -->
+      <div class="config-section">
+        <h3>Search Topic</h3>
+        <div class="form-group">
+          <label for="discovery-query">What topic should we search for?</label>
+          <input type="text" id="discovery-query" placeholder="e.g. satisfying, restoration, ASMR">
+          <small style="color: #64748b; font-size: 11px; margin-top: 4px; display: block;">
+            This topic will be used to search for videos on YouTube, Instagram, and TikTok.
+          </small>
+        </div>
+      </div>
+
+      <!-- YouTube Section -->
+      <div class="config-section">
+        <h3>YouTube Setup</h3>
+        <div class="form-group">
+          <label for="discovery-yt-key">YouTube Search Key</label>
+          <input type="password" id="discovery-yt-key" placeholder="AIzaSy...">
+        </div>
+        <div class="form-group" style="margin-top: 10px;">
+          <label>YouTube Link Account Credentials</label>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <input type="text" id="discovery-yt-client-id" placeholder="Client ID" style="font-size: 12px; padding: 6px;">
+            <input type="password" id="discovery-yt-client-secret" placeholder="Client Secret" style="font-size: 12px; padding: 6px;">
+          </div>
+          <button class="btn btn-secondary" id="btn-yt-auth" style="margin-top: 8px; width: 100%; font-size: 12px; padding: 6px;">Log In With YouTube</button>
+          <span id="yt-auth-status" style="display: block; font-size: 11px; margin-top: 4px; color: #ef4444; font-weight: 600; text-align: center;">Status: Not Connected</span>
+        </div>
+      </div>
+
+      <!-- Instagram Section -->
+      <div class="config-section">
+        <h3>Instagram Setup</h3>
+        <div class="form-group">
+          <label for="discovery-insta-endpoint">Instagram Connection Link or Scraper ID</label>
+          <input type="url" id="discovery-insta-endpoint" placeholder="https://api.apify.com/...">
+        </div>
+        <div class="form-group">
+          <label for="discovery-insta-key">Apify Access Key</label>
+          <input type="password" id="discovery-insta-key" placeholder="Apify Token">
+        </div>
+      </div>
+
+      <!-- TikTok Section -->
+      <div class="config-section">
+        <h3>TikTok Setup</h3>
+        <div class="form-group">
+          <label for="discovery-tiktok-endpoint">TikTok Connection Link or Scraper ID</label>
+          <input type="url" id="discovery-tiktok-endpoint" placeholder="https://api.apify.com/...">
+        </div>
+        <div class="form-group">
+          <label for="discovery-tiktok-key">Apify Access Key</label>
+          <input type="password" id="discovery-tiktok-key" placeholder="Apify Token">
+        </div>
+      </div>
+
+      <!-- Scheduler Section -->
+      <div class="config-section">
+        <h3>Daily Auto Runs</h3>
+        <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <input type="checkbox" id="auto-pipeline-enabled" style="width: auto;">
+          <label for="auto-pipeline-enabled" style="margin-bottom: 0;">Turn on daily auto runs</label>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="auto-daily-time">Time to run</label>
+            <input type="time" id="auto-daily-time" value="10:00">
+          </div>
+          <div class="form-group">
+            <label for="auto-default-voice">Narrator Voice</label>
+            <select id="auto-default-voice">
+              <option value="21m00Tcm4TlvDq8ikWAM">Rachel</option>
+              <option value="AZnzlk1XhkjUfBnGyDLq">Dom (Male)</option>
+              <option value="EXAVITQu4vr4xnSDxMaL">Bella</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" style="margin-top: 10px;">
+          <div class="form-group">
+            <label for="auto-default-music">Background Music</label>
+            <select id="auto-default-music">
+              <option value="auto">Let AI Decide 🪄</option>
+              <option value="random">Random Track</option>
+              <option value="none">No Music</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Music Volume</label>
+            <small style="color: #64748b; font-size: 11px; display: block; margin-top: 4px;">
+              🪄 The AI automatically sets the right volume level for each video.
+            </small>
+            <!-- Hidden — kept so JS doesn't break, AI sets value internally -->
+            <input type="hidden" id="auto-music-volume" value="12">
+          </div>
+        </div>
+      </div>
+
+      <!-- Style Prompt Section -->
+      <div class="config-section">
+        <h3>AI Instructions</h3>
+        <div class="form-group">
+          <label for="style-editor">Instructions for the AI (e.g. make it funny, focus on fast clips)</label>
+          <textarea id="style-editor" rows="5" placeholder="e.g. Focus on fast-paced processes, make the script humorous..."></textarea>
+        </div>
+      </div>
+
+      <!-- Music Library Manager -->
+      <div class="config-section">
+        <h3>Background Music Library</h3>
+        <div id="music-library-list" style="max-height: 180px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; background: #f8fafc; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <div class="empty-state" style="font-size: 12px; color: #64748b;">Loading background tracks...</div>
+        </div>
+        <div class="form-group">
+          <label>Upload Background Music</label>
+          <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+            <input type="file" id="music-library-upload" accept="audio/*" style="font-size: 11px; flex: 1;">
+            <button class="btn btn-secondary" id="btn-music-upload" style="font-size: 11px; padding: 4px 8px; width: auto; margin-top: 0;">Upload</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sound Effects (SFX) Library Manager -->
+      <div class="config-section">
+        <h3>Sound Effects Library</h3>
+        <p style="font-size: 11px; color: #64748b; margin-bottom: 10px;">Upload short audio clips (whooshes, pops, drums, etc.) to layer into your videos.</p>
+        <div id="sfx-library-list" style="max-height: 180px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; background: #f8fafc; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <div class="empty-state" style="font-size: 12px; color: #64748b;">No sound effects uploaded yet.</div>
+        </div>
+        <div class="form-group">
+          <label>Upload Sound Effect</label>
+          <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+            <input type="file" id="sfx-library-upload" accept="audio/*" style="font-size: 11px; flex: 1;">
+            <button class="btn btn-secondary" id="btn-sfx-upload" style="font-size: 11px; padding: 4px 8px; width: auto; margin-top: 0;">Upload</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save Button -->
+      <button class="btn btn-primary" id="btn-save-discovery-config" style="width: 100%; margin-top: 20px;">
+        Save Configurations
+      </button>
+    </div>
+  </aside>
+
+  <!-- MANUAL EDIT / VIEW WORKSPACE OVERLAY MODAL -->
+  <div class="modal-overlay" id="edit-modal-overlay">
+    <div class="edit-modal">
+      <div class="modal-header">
+        <div class="title-group">
+          <span class="badge" id="active-id">SHORT-ID</span>
+          <span class="badge" id="active-theme-badge">Category</span>
+          <h2 id="active-title-heading">Tweak Short Compilation</h2>
+        </div>
+        <button class="btn-close-modal" id="btn-close-edit-modal">×</button>
+      </div>
+
+      <div class="modal-body-columns">
+        
+        <!-- SUMMARY OF AI ACTIONS -->
+        <section class="panel-inside summary-actions-panel" style="grid-column: span 2; background: #eff6ff; border-color: #bfdbfe; margin-bottom: 10px; padding: 16px;">
+          <h3 style="color: #1e3a8a; font-size: 13px; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em; font-weight: 700;">
+            ✨ AI Production & Edit Summary
+          </h3>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; font-size: 13px;">
+            <div>
+              <strong>YouTube Link / Status:</strong>
+              <div style="margin-top: 4px;" id="summary-yt-link">Not uploaded yet</div>
+              <button class="btn btn-primary" id="btn-yt-upload-video" style="font-size: 11px; margin-top: 6px; padding: 4px 8px; width: auto; display: none;">Upload to YouTube</button>
+            </div>
+            <div>
+              <strong>ElevenLabs Voiceover:</strong>
+              <div style="margin-top: 4px;" id="summary-voice-details">Not generated</div>
+            </div>
+            <div>
+              <strong>FFmpeg Editing Actions:</strong>
+              <div style="margin-top: 4px;" id="summary-edit-actions">No editing actions done</div>
+            </div>
+            <div>
+              <strong>Gemini Safety Assessment:</strong>
+              <div style="margin-top: 4px;" id="summary-safety-score">Not audited</div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- MODAL LEFT COLUMN: PREVIEWS & TEXT -->
+        <div class="modal-column left-column">
+          <!-- Video source clip -->
+          <div class="media-box source-media">
+            <h3>Original Clip</h3>
+            <div id="video-placeholder" class="video-placeholder">Source video not loaded</div>
+            <a href="#" target="_blank" id="active-source-link" class="clip-link">Open Original Link ↗</a>
+          </div>
+
+          <!-- Script Editing -->
+          <section class="panel-inside">
+            <div class="panel-header-inside">
+              <h3>Narration Script</h3>
+              <div class="word-counter">
+                <span id="script-word-count">0</span> words | <span id="script-duration-count">0</span>s
+              </div>
+            </div>
+            <div class="form-group">
+              <textarea id="active-script" rows="5" placeholder="Narrator script..."></textarea>
+            </div>
+            <div class="audio-generation-row">
+              <button class="btn btn-secondary" id="btn-generate-script">AI Re-Write Script</button>
+              <button class="btn btn-primary" id="btn-generate-voice">Generate TTS Voice</button>
+              <audio id="voice-player" controls style="display: none; height: 32px; flex: 1;"></audio>
+            </div>
+          </section>
+
+          <!-- Editorial angle and notes -->
+          <section class="panel-inside" style="margin-top: 10px;">
+            <div class="form-group">
+              <label for="active-notes">Ingestion Summary Notes</label>
+              <textarea id="active-notes" rows="2" placeholder="Summary notes..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="active-angle">AI Editorial Angle Focus</label>
+              <input type="text" id="active-angle" placeholder="Editorial angle focus...">
+            </div>
+            <button class="btn btn-secondary" id="btn-generate-angle" style="width: 100%;">Re-Evaluate Angle & Safety</button>
+          </section>
+
+          <!-- YouTube metadata & Scheduling -->
+          <section class="panel-inside" style="margin-top: 10px;">
+            <h3>YouTube Metadata & Schedule</h3>
+            <div class="form-row" style="margin-top: 8px;">
+              <div class="form-group">
+                <label for="active-status">Workflow Status</label>
+                <select id="active-status">
+                  <option value="1. Candidate">1. Candidate</option>
+                  <option value="2. In Progress">2. In Progress</option>
+                  <option value="4. Rejected">4. Rejected</option>
+                  <option value="6. Rendered">6. Rendered</option>
+                  <option value="7. Approved">7. Approved</option>
+                  <option value="8. Published">8. Published</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="active-schedule">Schedule Release Time</label>
+                <input type="text" id="active-schedule" placeholder="YYYY-MM-DD HH:MM">
+              </div>
+            </div>
+            <div class="form-group" style="margin-top: 8px;">
+              <label for="active-title">Video Title</label>
+              <input type="text" id="active-title" placeholder="Title (Max 60 chars)...">
+            </div>
+            <div class="form-group">
+              <label for="active-description">Video Description</label>
+              <textarea id="active-description" rows="3" placeholder="Description & hashtags..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="active-youtube-url">Uploaded YouTube URL</label>
+              <input type="url" id="active-youtube-url" placeholder="https://youtube.com/shorts/...">
+            </div>
+          </section>
+        </div>
+
+        <!-- MODAL RIGHT COLUMN: STITCHING, SLIDERS & EXPORT -->
+        <div class="modal-column right-column">
+          <!-- Safety sliders -->
+          <section class="panel-inside">
+            <h3>AI Evaluation Guidelines</h3>
+            
+            <div class="slider-row">
+              <div class="slider-info">
+                <span>Monetization Safety</span>
+                <span class="slider-value" id="val-monetization">10</span>
+              </div>
+              <input type="range" id="slide-monetization" min="1" max="10">
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-info">
+                <span>Advertiser Friendly</span>
+                <span class="slider-value" id="val-advertiser">10</span>
+              </div>
+              <input type="range" id="slide-advertiser" min="1" max="10">
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-info">
+                <span>Viral Potential</span>
+                <span class="slider-value" id="val-viral">8</span>
+              </div>
+              <input type="range" id="slide-viral" min="1" max="10">
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-info">
+                <span>Transformation Potential</span>
+                <span class="slider-value" id="val-transformation">9</span>
+              </div>
+              <input type="range" id="slide-transformation" min="1" max="10">
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-info">
+                <span>Originality / Source Risk</span>
+                <span class="slider-value" id="val-source">2</span>
+              </div>
+              <input type="range" id="slide-source" min="1" max="10">
+            </div>
+
+            <div class="checkbox-row" style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="override-rejection" style="width: auto;">
+              <label for="override-rejection" style="margin-bottom: 0;">Force Safety Override</label>
+            </div>
+          </section>
+
+          <!-- Stitching, Crop & Trim -->
+          <section class="panel-inside" style="margin-top: 10px;">
+            <h3>FFmpeg Edit & Composition</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="render-crop">Crop Center Anchor</label>
+                <select id="render-crop">
+                  <option value="center">Center Crop</option>
+                  <option value="left">Left Anchor</option>
+                  <option value="right">Right Anchor</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="render-ai-style">Color styling</label>
+                <div style="display: flex; align-items: center; gap: 6px; margin-top: 8px;">
+                  <input type="checkbox" id="render-ai-style" style="width: auto;">
+                  <label for="render-ai-style" style="margin-bottom: 0;">AI Cyberpunk Grade</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row" style="margin-top: 10px;">
+              <div class="form-group">
+                <label for="render-trim-start">Trim Start (s)</label>
+                <input type="number" id="render-trim-start" value="0">
+              </div>
+              <div class="form-group">
+                <label for="render-trim-end">Trim End (s)</label>
+                <input type="number" id="render-trim-end" value="30">
+              </div>
+            </div>
+
+            <div class="form-row" style="margin-top: 10px;">
+              <div class="form-group">
+                <label for="render-music">Background Music</label>
+                <select id="render-music">
+                  <option value="auto">Let AI Decide 🪄</option>
+                  <option value="none">No music</option>
+                </select>
+              </div>
+              <div class="form-group" id="music-volume-group">
+                <label for="render-music-volume">Volume (<span id="music-vol-label">10</span>%)</label>
+                <input type="range" id="render-music-volume" min="1" max="100" value="10">
+              </div>
+            </div>
+
+            <!-- SFX Row -->
+            <div class="form-row" style="margin-top: 10px;">
+              <div class="form-group">
+                <label for="render-sfx">Sound Effect</label>
+                <select id="render-sfx">
+                  <option value="none">No sound effect</option>
+                </select>
+              </div>
+              <div class="form-group" style="display: flex; align-items: flex-end;">
+                <small style="color: #64748b; font-size: 11px; padding-bottom: 4px;">🎚️ AI sets volume automatically at 55%.</small>
+              </div>
+            </div>
+            <div class="render-buttons-row" style="margin-top: 14px; gap: 8px; display: flex;">
+              <button class="btn btn-secondary" id="btn-download-source" style="flex: 1;">Download Source</button>
+              <button class="btn btn-primary" id="btn-render-draft" style="flex: 1;">Stitch Draft Short</button>
+            </div>
+          </section>
+
+          <!-- Draft video preview -->
+          <div class="media-box draft-media" id="draft-video-panel" style="display: none; margin-top: 10px;">
+            <h3>Compiled 9:16 Video Draft</h3>
+            <video id="draft-player" controls style="width: 100%; border-radius: 8px; max-height: 220px; background: black;"></video>
+          </div>
+
+          <!-- Save/Delete Actions -->
+          <div class="action-buttons-group" style="margin-top: 14px; display: flex; gap: 8px;">
+            <button class="btn btn-secondary" id="btn-delete-short" style="flex: 1; border-color: #ef4444; color: #ef4444;">Delete Video</button>
+            <button class="btn btn-primary" id="btn-save-short" style="flex: 2;">Save Changes & Exit</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- QUICK PREVIEW MODAL OVERLAY -->
+  <div class="modal-overlay" id="preview-video-modal" style="display: none; align-items: center; justify-content: center; z-index: 1100;">
+    <div style="background: white; border-radius: 12px; padding: 20px; width: 90%; max-width: 380px; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); position: relative; border: 1px solid #e2e8f0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin: 0; font-size: 15px; color: #1e293b; font-weight: 600;" id="quick-preview-title">Quick Draft Preview</h3>
+        <button id="btn-close-quick-preview" style="background: none; border: none; font-size: 24px; color: #94a3b8; cursor: pointer; padding: 0; line-height: 1;">×</button>
+      </div>
+      <video id="quick-preview-player" controls style="width: 100%; border-radius: 8px; max-height: 500px; background: black; aspect-ratio: 9/16;"></video>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="toast">Action completed successfully</div>
+
+  <script src="app.js"></script>
+</body>
+</html>
