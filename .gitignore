@@ -6,3 +6,5 @@ scratch/
 graphify-out/
 .DS_Store
 *.log
+wiki/
+Thumbs.db
